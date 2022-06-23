@@ -1,0 +1,9 @@
+# Output files
+data.csv
+*.dcd
+output*
+*.dat
+
+# Python temp
+*.pyc
+*.swp
