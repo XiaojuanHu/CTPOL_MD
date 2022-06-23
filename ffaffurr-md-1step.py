@@ -18,7 +18,6 @@ time_start=time.time()
 # parameter file we choose
 force_file = sys.argv[1]
 custom_file = sys.argv[2]
-pdb_path = str(sys.argv[3])
 
 #in_file = open(file_list, 'r')
 #list_logfiles = in_file.read().splitlines()
