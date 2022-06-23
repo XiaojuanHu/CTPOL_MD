@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CustomForce>
+  <CustomChargeTransfer CN_factor="3.4182054209689987" f15="1.0">
+    <Atom a="-1.0366958198744165" b="0.32345499739114547" r="0.3120056926923157" type="1142" />
+    <Atom a="-0.24613782540552598" b="0.0723196506646334" r="0.29381770374172556" type="1178" />
+    <Atom a="-0.477564137743749" b="0.1289579485359696" r="0.2700327314048982" type="1180" />
+    <Atom a="-2.667294827029821" b="0.7220961686348052" r="0.2707222918581141" type="2178" />
+    <Atom a="-0.6353615903124562" b="0.17156346688764607" r="0.2700249267559204" type="2180" />
+    <Atom a="-0.5929168387074324" b="0.19281729700762937" r="0.3252012498548261" type="2444" />
+    <Atom a="-2.4236150210540295" b="0.8434716452028331" r="0.3480221230994053" type="2452" />
+  </CustomChargeTransfer>
+  <CustomPoleForce gamma="0.92">
+    <Polarize R0="1.668214" polarizability="0.000879" type="444" />
+    <Polarize R0="1.668214" polarizability="0.000879" type="2444" />
+    <Polarize R0="1.68876" polarizability="0.000729" type="1178" />
+    <Polarize R0="1.736205" polarizability="0.000952" type="452" />
+    <Polarize R0="1.736205" polarizability="0.000952" type="2452" />
+    <Polarize R0="1.922779" polarizability="0.004383" type="834" />
+    <Polarize R0="1.789173" polarizability="0.001454" type="166" />
+    <Polarize R0="1.789173" polarizability="0.001454" type="2166" />
+    <Polarize R0="1.694145" polarizability="0.00093" type="1180" />
+    <Polarize R0="1.778729" polarizability="0.001341" type="447" />
+    <Polarize R0="1.778729" polarizability="0.001341" type="2447" />
+    <Polarize R0="1.793621" polarizability="0.001416" type="448" />
+    <Polarize R0="1.793621" polarizability="0.001416" type="2448" />
+    <Polarize R0="1.741191" polarizability="0.001316" type="80" />
+    <Polarize R0="1.815864" polarizability="0.001473" type="1177" />
+    <Polarize R0="1.773974" polarizability="0.001397" type="446" />
+    <Polarize R0="1.773974" polarizability="0.001397" type="2446" />
+    <Polarize R0="1.81344" polarizability="0.001486" type="1166" />
+    <Polarize R0="1.791078" polarizability="0.001441" type="177" />
+    <Polarize R0="1.791078" polarizability="0.001441" type="2177" />
+    <Polarize R0="1.661583" polarizability="0.000721" type="178" />
+    <Polarize R0="1.661583" polarizability="0.000721" type="2178" />
+    <Polarize R0="2.14104" polarizability="0.002668" type="1142" />
+    <Polarize R0="1.727565" polarizability="0.001292" type="184" />
+    <Polarize R0="1.795394" polarizability="0.001446" type="449" />
+    <Polarize R0="1.795394" polarizability="0.001446" type="2449" />
+    <Polarize R0="1.668585" polarizability="0.000901" type="180" />
+    <Polarize R0="1.668585" polarizability="0.000901" type="2180" />
+    <Polarize R0="1.835063" polarizability="0.001475" type="1148" />
+    <Polarize R0="1.632450" polarizability="0.000724" type="96" />  
+    <Polarize R0="1.751692" polarizability="0.001394" type="250" />  
+    <Polarize R0="1.658540" polarizability="0.000906" type="246" />  
+    <Polarize R0="1.728447" polarizability="0.001339" type="235" />  
+    <Polarize R0="1.767569" polarizability="0.001431" type="81" />  
+    <Polarize R0="1.785980" polarizability="0.001478" type="82" />  
+    <Polarize R0="1.632367" polarizability="0.000864" type="243" />  
+    <Polarize R0="1.777620" polarizability="0.001457" type="94" />  
+    <Polarize R0="1.794006" polarizability="0.001497" type="108" />  
+    <Polarize R0="1.728016" polarizability="0.000858" type="214" />  
+    <Polarize R0="1.865924" polarizability="0.001685" type="213" />  
+    <Polarize R0="1.597664" polarizability="0.000810" type="230" />  
+    <Polarize R0="1.657136" polarizability="0.000904" type="179" />  
+    <Polarize R0="1.765120" polarizability="0.001425" type="165" />  
+    <Polarize R0="1.783352" polarizability="0.001471" type="90" />  
+    <Polarize R0="1.761014" polarizability="0.001417" type="251" />  
+    <Polarize R0="1.796474" polarizability="0.001504" type="216" />  
+    <Polarize R0="1.622912" polarizability="0.000711" type="109" />  
+    <Polarize R0="1.770538" polarizability="0.001439" type="99" />  
+    <Polarize R0="1.758774" polarizability="0.001410" type="245" />  
+    <Polarize R0="1.668585" polarizability="0.000922" type="2000" /> 
+  </CustomPoleForce>
+</CustomForce>
