@@ -17,7 +17,6 @@ time_start=time.time()
 
 # parameter file we choose
 force_file = sys.argv[1]
-custom_file = sys.argv[2]
 
 #in_file = open(file_list, 'r')
 #list_logfiles = in_file.read().splitlines()
@@ -26,7 +25,7 @@ custom_file = sys.argv[2]
 #f = open(os.path.join(os.getcwd(),'energies_openmm_pre.kcal'), 'w+')
 #for file in list_logfiles:
 try:
-    pdb_path=sys.argv[3]
+    pdb_path=sys.argv[2]
 except IndexError:
     pdb_path='input.pdb'
 
@@ -375,7 +374,7 @@ elif 'ffaffurr-oplsaa' in force_file:
          type__ChargeTransfer_parameters, \
          type__zero_transfer_distance, \
          type__averageAlpha0eff, \
-         type__averageR0eff     = get_custombondforce_para(file=custom_file)
+         type__averageR0eff     = get_custombondforce_para(file='CustomForce.xml')
         
         # get n_atom__xyz
         #n_atom__xyz = get_pdb__info(os.path.join(pdb_folder, file))
