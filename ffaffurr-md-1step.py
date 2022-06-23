@@ -7,12 +7,12 @@ import os, sys, re
 import traceback
 from xml.etree import ElementTree as ET
 import time
-from IPython.core import ultratb
-sys.excepthook = ultratb.FormattedTB(
+#from IPython.core import ultratb
+#sys.excepthook = ultratb.FormattedTB(
     #mode='Verbose',
-    color_scheme='Linux', 
-    call_pdb=False
-)
+#    color_scheme='Linux', 
+#    call_pdb=False
+#)
 time_start=time.time()
 
 # parameter file we choose
@@ -176,6 +176,20 @@ def get_atom__type():
 global n_atom__type
 n_atom__type = get_atom__type()
 #print(n_atom__type)
+
+def forcegroupify(system):
+    forcegroups = {}
+    for i in range(system.getNumForces()):
+        force = system.getForce(i)
+        force.setForceGroup(i)
+        forcegroups[force] = i
+    return forcegroups
+
+def getEnergyDecomposition(context, forcegroups):
+    energies = {}
+    for f, i in forcegroups.items():
+        energies[f.__class__.__name__] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
+    return energies
 
 ##################functions for each conformer###############################################################################################
 
@@ -522,6 +536,8 @@ print("Getting ready for simulation")
 # Do we need?        
 #if inputs.pcouple == 'yes':      system = barostat(system, inputs)
 #if inputs.rest == 'yes':         system = restraints(system, crd, inputs)     
+
+fgrps=forcegroupify(system)
         
 #integrator = VerletIntegrator(0.002*picoseconds)
 integrator = LangevinIntegrator(300*kelvin, 1/picosecond, 0.002*picoseconds)
@@ -687,7 +703,8 @@ with open('time_out.dat', 'w') as timeout:
                         #        timeout.write("%10.3f "%(energy/4.184/kilojoules_per_mole))
                         #print(force.__class__.__name__, energy/4.184/kilojoules_per_mole )
                 #        print( energy/4.184/kilojoules_per_mole, end='    ' ),
-                print('\n')
+                
+                
                         
                # for i in pdb.positions:
                #     print(i[0], i[1], i[2])
@@ -697,6 +714,11 @@ with open('time_out.dat', 'w') as timeout:
 
                # start=time.time()
                 cmforce.updateParametersInContext(simulation.context)
+                
+                tt= getEnergyDecomposition(simulation.context, fgrps)
+                for idd in tt.keys():
+                    print(idd,tt[idd]) 
+                print('\n')
                 
                 end = time.time()
                 timeout.write("%10.3f \n"%((end-start)*1000))
