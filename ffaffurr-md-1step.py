@@ -1,7 +1,7 @@
-from simtk.openmm.app import *
-from simtk.openmm.app.internal import *
-from simtk.openmm import *
-from simtk.unit import *
+from openmm.app import *
+from openmm.app.internal import *
+from openmm import *
+from openmm.unit import *
 from sys import stdout
 import os, sys, re
 import traceback
@@ -345,7 +345,11 @@ global f14
 global polar_index
 global ion_index
 #pdb = PDBFile(pdb_path)
+
+print("Initializing...")
 pdb = PDBFile(pdb_path)
+
+print("Loading topology and parameters")
 modeller = Modeller(pdb.topology, pdb.positions)
 forcefield = ForceField(force_file)
 
@@ -353,15 +357,18 @@ forcefield = ForceField(force_file)
 
 #system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff, constraints=None)
 #pdb.topology.setPeriodicBoxVectors([[5.5,0, 0],[0,5.5, 0],[0,0, 5.5]]) 
+print("Creating System")
 system = forcefield.createSystem(modeller.topology, nonbondedMethod=PME,nonbondedCutoff=1.2*nanometer, constraints=HAngles)
 
 system.addForce(MonteCarloBarostat(1*bar, 300*kelvin))
 
+print("Applying parameters")
 if force_file == 'OPLS-AA.xml':
         system = OPLS_LJ(system)
         
 # if we use newFF parameters
 elif 'ffaffurr-oplsaa' in force_file:
+        print("Applying modified parameters and CT a+ POL")
         #system = OPLS_LJ(system)
         # calculate vdw energies through pairs parameters if we use newFF
         #pairs_vdw = openmm.CustomBondForce('4*factor*epsilon*((sigma/r)^12 - (sigma/r)^6)')
@@ -506,7 +513,8 @@ elif 'ffaffurr-oplsaa' in force_file:
                         
                 system.addForce(pol_force)      
         
-        
+
+print("Getting ready for simulation")        
 #platform = Platform.getPlatformByName('CUDA')
 #prop = dict(CudaPrecision='mixed')
    
@@ -536,7 +544,7 @@ simulation.context.setPositions(modeller.positions)
 # set three numbers
 #simulation.context.setPeriodicBoxVectors(5.5*nanometers, 5.5*nanometers, 5.5*nanometers)
 
-
+print("Minimizing")
 
 simulation.minimizeEnergy()
 simulation.reporters.append(
@@ -548,6 +556,7 @@ simulation.reporters.append(StateDataReporter('data.csv', 10000, time=True,
 simulation.reporters.append(PDBReporter('output.pdb', 500))
 simulation.reporters.append(CheckpointReporter('checkpnt.chk', 50000))
 
+print("Simulating...")
 
 with open('time_out.dat', 'w') as timeout:
         headers="Step SimTime charge_trans".split() 
