@@ -7,12 +7,12 @@ import os, sys, re
 import traceback
 from xml.etree import ElementTree as ET
 import time
-from IPython.core import ultratb
-sys.excepthook = ultratb.FormattedTB(
+#from IPython.core import ultratb
+#sys.excepthook = ultratb.FormattedTB(
     #mode='Verbose',
-    color_scheme='Linux', 
-    call_pdb=False
-)
+#    color_scheme='Linux', 
+#    call_pdb=False
+#)
 time_start=time.time()
 
 # parameter file we choose
