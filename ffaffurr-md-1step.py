@@ -29,9 +29,6 @@ args=parser.parse_args()
 force_file = args.parameter
 # initio structure
 pdb_path = args.structure
-    pdb_path=args.structure
-except IndexError:
-    pdb_path='input.pdb'
     
 # basic parameters of the simulation
 n_steps = 20000000
