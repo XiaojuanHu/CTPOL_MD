@@ -17,7 +17,10 @@ import argparse
 time_start=time.time()
 
 # arguments
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(
+    description="Runs simulation with CT+POL if applicable",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 parser.add_argument("-p", "--parameter", help="parameter file, can be OPLS-AA.xml or ffaffurr-oplsaa.xml")
 parser.add_argument("-s", "--structure", help="pdb file")
 args=parser.parse_args()
