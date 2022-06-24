@@ -7,6 +7,7 @@ import os, sys, re
 import traceback
 from xml.etree import ElementTree as ET
 import time
+import argparse
 #from IPython.core import ultratb
 #sys.excepthook = ultratb.FormattedTB(
     #mode='Verbose',
@@ -15,19 +16,25 @@ import time
 #)
 time_start=time.time()
 
+# arguments
+parser = argparse.ArgumentParser(
+    description="Runs simulation with CT+POL if applicable",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+parser.add_argument("parameter", help="parameter file, can be OPLS-AA.xml or ffaffurr-oplsaa.xml")
+parser.add_argument("-s", "--structure", help="pdb file", default='input.pdb')
+args=parser.parse_args()
+
 # parameter file we choose
-force_file = sys.argv[1]
-
-#in_file = open(file_list, 'r')
-#list_logfiles = in_file.read().splitlines()
-#in_file.close()
-
-#f = open(os.path.join(os.getcwd(),'energies_openmm_pre.kcal'), 'w+')
-#for file in list_logfiles:
-try:
-    pdb_path=sys.argv[2]
-except IndexError:
-    pdb_path='input.pdb'
+force_file = args.parameter
+# initio structure
+pdb_path = args.structure
+    
+# basic parameters of the simulation
+n_steps = 20000000
+time_step = 0.002*picoseconds
+trajectory_output_frequency = 500
+potential_output_frequency = 10
 
 ################amber vdW > oplsaa vdW#########################################################################
 def OPLS_LJ(system):
@@ -81,20 +88,6 @@ def get_custombondforce_para(file='CustomForce.xml'):
         type__averageR0eff = {}
         
         tree = ET.ElementTree(file=file)
-        #if tree.getroot().find('CustomBondForce') is not None:
-        #       for bond14 in tree.getroot().find('CustomBondForce').findall('Bond14'):
-        #               if int(bond14.attrib['atom1']) <= int(bond14.attrib['atom2']):
-        #                       pair = ( int(bond14.attrib['atom1']), int(bond14.attrib['atom2']) )
-        #               else:
-        #                       pair = ( int(bond14.attrib['atom2']), int(bond14.attrib['atom1']) )
-        #               pairs_14__para[pair] = [float(bond14.attrib['sigma']), float(bond14.attrib['epsilon'])]
-        #               
-        #       for bond15 in tree.getroot().find('CustomBondForce').findall('Bond15'):
-        #               if int(bond15.attrib['atom1']) <= int(bond15.attrib['atom2']):
-        #                       pair = ( int(bond15.attrib['atom1']), int(bond15.attrib['atom2']) )
-        #               else:
-        #                       pair = ( int(bond15.attrib['atom2']), int(bond15.attrib['atom1']) )
-        #               pairs_15__para[pair] = [float(bond15.attrib['sigma']), float(bond15.attrib['epsilon'])]
                         
         if tree.getroot().find('CustomChargeTransfer') is not None:
                 CN_factor = str(tree.getroot().find('CustomChargeTransfer').attrib['CN_factor'])
@@ -194,21 +187,6 @@ def getEnergyDecomposition(context, forcegroups):
 ##################functions for each conformer###############################################################################################
 
 # get n_atom__xyz
-'''
-def get_pdb__info(file_path):
-        with open(file_path, 'r') as structure:
-                file_lines = structure.readlines()
-                lines = list(file_lines)
-                
-                n_atom__xyz = {}
-                for line in lines:
-                        coords_found = re.match(r'(\s*(\w+)\s*(\d+)\s*(\w+\d*)\s*(\w+)\s*(\d+)\s*(.?\d+\.\d+)\s*(.?\d+\.\d+)\s*(.?\d+\.\d+)\s*(.?\d+\.\d+)\s*(.?\d+\.\d+)\s*?)', line)
-                        if coords_found:
-                                stringa, n_atom, element, residue, n_residue, x, y, z, int1, int2, symbol = line.split(None)
-                                n_atom__xyz[int(n_atom)-1] = [float(x), float(y), float(z)]
-
-        return(n_atom__xyz)
-#'''
 def get_pdb__info(file_path):
     pdb = PDBFile(file_path)
     modeller = Modeller(pdb.topology, pdb.positions)
@@ -233,12 +211,6 @@ def get_distance(atom1, atom2, n_atom__xyz):
                                                 + ( n_atom__xyz[atom1][2] - n_atom__xyz[atom2][2] ) ** 2. )
         distance = distance * 0.1                     # angstrom to nm
         return(distance)
-
-#def get_type__R0eff():
-#       
-#       type__averageR0eff = {'166': 1.7809661907269692, '177': 1.784559222657978, '178': 1.6460709547789392, '180': 1.6657240235976452, '183': 1.4087190195930954, \
-#       '184': 1.7192608379930432, '80': 1.7374199603381109, '85': 1.3893812385574464, '880': 1.3979841254475214}
-#       return(type__averageR0eff)
 
 # get E0
 def get_E0(n_atom__xyz, n_atom__charge, n_atom_nohyd, ion_index):
@@ -288,7 +260,6 @@ def get_Tij(n_atom__xyz, i, j):
         #type__averageR0eff = get_type__R0eff()
         
         vec_r_ij = numpy.array( n_atom__xyz[ j ] ) * 0.1 - numpy.array( n_atom__xyz[ i ] ) * 0.1         # angstrom > nm
-        #vec_r_ij_T = vec_r_ij.transpose()
                 
         r_ij = get_distance(i, j, n_atom__xyz)
         
@@ -323,9 +294,7 @@ def get_induced_dipole(n_atom__xyz, n_atom__alpha0eff, n_atom__charge, n_atom_no
                 if i != ion_index:
                         TiMe = get_Tij(n_atom__xyz, i, ion_index)
                         TMei = get_Tij(n_atom__xyz, ion_index, i)
-                        #print(TiMe)
-                        #print(type(TiMe))
-                        #print(type(dipole_Me_1))
+                        
                         n_atom_nohyd__dipole[i] = n_atom__alpha0eff[i] *  n_atom_nohyd__E0[i] + n_atom__alpha0eff[i] * numpy.dot(dipole_Me_1 , TiMe)
                         dipole_Me_2 += n_atom__alpha0eff[ion_index] * numpy.dot(n_atom_nohyd__dipole[i] , TMei)
                         
@@ -370,7 +339,6 @@ forcefield = ForceField(force_file)
 #modeller.addSolvent(forcefield, padding=1.0*nanometers)
 
 #system = forcefield.createSystem(pdb.topology, nonbondedMethod=NoCutoff, constraints=None)
-#pdb.topology.setPeriodicBoxVectors([[5.5,0, 0],[0,5.5, 0],[0,0, 5.5]]) 
 print("Creating System")
 system = forcefield.createSystem(modeller.topology, nonbondedMethod=PME,nonbondedCutoff=1.2*nanometer, constraints=HAngles)
 
@@ -383,13 +351,6 @@ if force_file == 'OPLS-AA.xml':
 # if we use newFF parameters
 elif 'ffaffurr-oplsaa' in force_file:
         print("Applying modified parameters and CT a+ POL")
-        #system = OPLS_LJ(system)
-        # calculate vdw energies through pairs parameters if we use newFF
-        #pairs_vdw = openmm.CustomBondForce('4*factor*epsilon*((sigma/r)^12 - (sigma/r)^6)')
-        #
-        #pairs_vdw.addPerBondParameter("factor")
-        #pairs_vdw.addPerBondParameter("sigma")
-        #pairs_vdw.addPerBondParameter("epsilon")
         CN_factor, \
          f15, \
          type__ChargeTransfer_parameters, \
@@ -398,7 +359,6 @@ elif 'ffaffurr-oplsaa' in force_file:
          type__averageR0eff     = get_custombondforce_para(file='CustomForce.xml')
         
         # get n_atom__xyz
-        #n_atom__xyz = get_pdb__info(os.path.join(pdb_folder, file))
         n_atom__xyz = get_pdb__info(pdb_path)
         
         #print("DEBUG", n_atom__xyz) 
@@ -530,17 +490,12 @@ elif 'ffaffurr-oplsaa' in force_file:
 
 print("Getting ready for simulation")        
 #platform = Platform.getPlatformByName('CUDA')
-#prop = dict(CudaPrecision='mixed')
-   
-   
-# Do we need?        
-#if inputs.pcouple == 'yes':      system = barostat(system, inputs)
-#if inputs.rest == 'yes':         system = restraints(system, crd, inputs)     
+#prop = dict(CudaPrecision='mixed')    
 
 fgrps=forcegroupify(system)
         
 #integrator = VerletIntegrator(0.002*picoseconds)
-integrator = LangevinIntegrator(300*kelvin, 1/picosecond, 0.002*picoseconds)
+integrator = LangevinIntegrator(300*kelvin, 1/picosecond, time_step)
 
 
 simulation = Simulation(
@@ -553,23 +508,16 @@ simulation = Simulation(
 
 simulation.context.setPositions(modeller.positions)
 
-#if args.icrst:
-#    charmm_rst = read_charmm_rst(args.icrst)
-#    simulation.context.setPositions(charmm_rst.positions)
-#    simulation.context.setVelocities(charmm_rst.velocities)
-# set three numbers
-#simulation.context.setPeriodicBoxVectors(5.5*nanometers, 5.5*nanometers, 5.5*nanometers)
-
 print("Minimizing")
 
 simulation.minimizeEnergy()
 simulation.reporters.append(
         StateDataReporter(sys.stdout, 10, step=True, time=True, speed=True)
 )
-simulation.reporters.append(DCDReporter('output.dcd', 10000))
-simulation.reporters.append(StateDataReporter('data.csv', 10000, time=True,
+simulation.reporters.append(DCDReporter('output.dcd', trajectory_output_frequency))
+simulation.reporters.append(StateDataReporter('data.csv', potential_output_frequency, time=True,
         kineticEnergy=True, potentialEnergy=True))
-simulation.reporters.append(PDBReporter('output.pdb', 500))
+#simulation.reporters.append(PDBReporter('output.pdb', 500))
 simulation.reporters.append(CheckpointReporter('checkpnt.chk', 50000))
 
 print("Simulating...")
@@ -580,7 +528,7 @@ with open('time_out.dat', 'w') as timeout:
         timeout.write(head_form.format(*headers) )
         timeout.write('\n')
         
-        for sp in range(20000000):
+        for sp in range(n_steps):
                 simulation.step(1)
                 #print(simulation.currentStep)
                 if sp/10 % 1 != 0: continue
@@ -588,8 +536,6 @@ with open('time_out.dat', 'w') as timeout:
                 timeout.write("%10d "%sp)
                 start = time.time()
                 
-                #end = time.time()
-               # timeout.write("%10.3f "%((end-start)*1000))
                 # get position
                 state = simulation.context.getState(getEnergy=True,getPositions=True) # getForces =True)
                 position = state.getPositions()
@@ -600,10 +546,6 @@ with open('time_out.dat', 'w') as timeout:
                         a += 1
                         index__position[a] = [i[0]/nanometer * 10, i[1]/nanometer * 10, i[2]/nanometer * 10]   # nm > angstrom
                         
-                    
-                #end = time.time()
-                #timeout.write("%10.3f "%((end-start)*1000))
-               # start = time.time()
                 # get CN
                 cation_pairs = []               
                 for i in polar_index:
@@ -619,8 +561,6 @@ with open('time_out.dat', 'w') as timeout:
                 forces = { force.__class__.__name__ : force for force in system.getForces() }
                 nbforce = forces['NonbondedForce']
                 
-                #end = time.time()
-                #timeout.write("%10.3f "%((end-start)*1000))
                 # charge on L
                 #start = time.time()
                 total_transq = 0
@@ -628,7 +568,6 @@ with open('time_out.dat', 'w') as timeout:
                 for index in range(nbforce.getNumParticles()):
                         
                         # charge
-                        #[charge, sigma, epsilon] = nbforce.getParticleParameters(index)
                         [charge, sigma, epsilon] = [index__charge_ini[index], 0.0, 0.0]
                         #print(index, charge)
         
@@ -655,11 +594,8 @@ with open('time_out.dat', 'w') as timeout:
                                 charge_new = charge
                         index__charge[index]=charge_new/charge.unit
                 print('index:  ', float(ion_index), '  position:  ', float(index__position[ion_index][0]), float(index__position[ion_index][1]), float(index__position[ion_index][2]))
-                #end = time.time()
-                #timeout.write("%10.3f "%((end-start)*1000))
+                
                 # charge on ion
-                #start = time.time()
-                #[charge, sigma, epsilon] = nbforce.getParticleParameters(ion_index)
                 [charge, sigma, epsilon] = [index__charge_ini[ion_index], 0.0, 0.0]
                 charge_ion = ( charge/charge.unit - total_transq ) * charge.unit
                 nbforce.setParticleParameters(ion_index, charge_ion, sigma, epsilon )
@@ -669,10 +605,7 @@ with open('time_out.dat', 'w') as timeout:
                 print('step: ',sp, 'CT: ',total_transq)
                 #print(index__charge)
                 
-                #end = time.time()
-               # timeout.write("%10.3f "%((end-start)*1000))
                 # set exceptions
-                #start = time.time()
                 for i in range(nbforce.getNumExceptions()):
                         (p1, p2, q, sig, eps) = nbforce.getExceptionParameters(i)
                         if q._value != 0.0:
@@ -705,24 +638,14 @@ with open('time_out.dat', 'w') as timeout:
                 #        print( energy/4.184/kilojoules_per_mole, end='    ' ),
                 
                 
-                        
-               # for i in pdb.positions:
-               #     print(i[0], i[1], i[2])
-                
-               # end = time.time()
-               # timeout.write("%10.3f "%((end-start)*1000))
-
-               # start=time.time()
                 cmforce.updateParametersInContext(simulation.context)
                 
                 tt= getEnergyDecomposition(simulation.context, fgrps)
                 for idd in tt.keys():
                     print(idd,tt[idd]) 
                 print('\n')
+                print('################\n')
                 
-                end = time.time()
-                timeout.write("%10.3f \n"%((end-start)*1000))
-                timeout.write("%10.3f \n"%total_transq)
 #simulation.step(20000)
 simulation.saveCheckpoint('state.chk')
 sys.exit(0)
