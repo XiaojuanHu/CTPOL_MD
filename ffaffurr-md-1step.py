@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 parser.add_argument("parameter", help="parameter file, can be OPLS-AA.xml or ffaffurr-oplsaa.xml")
-parser.add_argument("-s", "--structure", help="pdb file")
+parser.add_argument("-s", "--structure", help="pdb file", default='input.pdb')
 args=parser.parse_args()
 
 # parameter file we choose
