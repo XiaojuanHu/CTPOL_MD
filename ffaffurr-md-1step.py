@@ -7,6 +7,7 @@ import os, sys, re
 import traceback
 from xml.etree import ElementTree as ET
 import time
+import argparse
 #from IPython.core import ultratb
 #sys.excepthook = ultratb.FormattedTB(
     #mode='Verbose',
@@ -15,8 +16,12 @@ import time
 #)
 time_start=time.time()
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--parameter", help="parameter file, can be OPLS-AA.xml or ffaffurr-oplsaa.xml")
+parser.add_argument("-s", "--structure", help="pdb file")
+args=parser.parse_args()
 # parameter file we choose
-force_file = sys.argv[1]
+force_file = args.parameter
 
 #in_file = open(file_list, 'r')
 #list_logfiles = in_file.read().splitlines()
@@ -25,7 +30,7 @@ force_file = sys.argv[1]
 #f = open(os.path.join(os.getcwd(),'energies_openmm_pre.kcal'), 'w+')
 #for file in list_logfiles:
 try:
-    pdb_path=sys.argv[2]
+    pdb_path=args.structure
 except IndexError:
     pdb_path='input.pdb'
 
@@ -719,7 +724,7 @@ with open('time_out.dat', 'w') as timeout:
                 for idd in tt.keys():
                     print(idd,tt[idd]) 
                 print('\n')
-                
+                print('################\n')
                 end = time.time()
                 timeout.write("%10.3f \n"%((end-start)*1000))
                 timeout.write("%10.3f \n"%total_transq)
