@@ -28,7 +28,7 @@ args=parser.parse_args()
 # parameter file we choose
 force_file = args.parameter
 # initio structure
-try:
+pdb_path = args.structure
     pdb_path=args.structure
 except IndexError:
     pdb_path='input.pdb'
