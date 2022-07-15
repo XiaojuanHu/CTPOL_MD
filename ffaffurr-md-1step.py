@@ -123,6 +123,21 @@ def get_CN(n_atom__xyz, cation_pairs, type__zero_transfer_distance):
         #sys.exit()
         return(CN)
 
+def get_CN_peri(n_atom__xyz, boxVectors, cation_pairs, type__zero_transfer_distance):
+
+        CN = 0
+        for pair in cation_pairs:
+                dist_vector = get_periodic_dist_vector(boxVectors,n_atom__xyz[pair[0]], n_atom__xyz[pair[1]])
+                distance = math.sqrt(dist_vector[0] **2 + dist_vector[1] **2 + dist_vector[2] **2)
+                if n_atom__type[pair[0]] in type__zero_transfer_distance.keys():
+                        if distance <= type__zero_transfer_distance[n_atom__type[pair[0]]]:
+                                CN += 1
+                elif n_atom__type[pair[1]] in type__zero_transfer_distance.keys():
+                        if distance <= type__zero_transfer_distance[n_atom__type[pair[1]]]:
+                                CN += 1
+        #sys.exit()
+        return(CN)
+
 def get_atom__type():
         # build system with OpenMM
         
@@ -253,6 +268,54 @@ def get_E0(n_atom__xyz, n_atom__charge, n_atom_nohyd, ion_index):
                             #print(n_atom__xyz) 
                             sys.exit("DEBUG EXIT")
         return(n_atom__E0)
+
+def get_E0_peri(n_atom__xyz, boxVectors, n_atom__charge, n_atom_nohyd, ion_index):
+
+        #type__averageR0eff = get_type__R0eff()
+
+        n_atom__E0 = {}
+        n_atom__E0[ion_index] = 0
+
+        for i in n_atom_nohyd:
+                if i != ion_index:
+                        try:
+                            #print("DEBUG: ion_index")
+
+                            ind1 = n_atom__xyz[ ion_index ]
+                            #print("DEBUG: i ")
+                            ind2 = n_atom__xyz[ i ]
+
+                            #dist_vector = get_periodic_dist_vector(boxVectors, ind1, ind2)
+
+                            #vec_r_iMe = numpy.array(  n_atom__xyz[ ion_index ]  ) * 0.1 \
+                           #             - numpy.array( n_atom__xyz[ i ] ) * 0.1    # angstrom > nm
+                            #vec_r_Mei = numpy.array( n_atom__xyz[ i ] ) * 0.1 - numpy.array( n_atom__xyz[ ion_index ] ) * 0.1
+                            vec_r_iMe = get_periodic_dist_vector(boxVectors, ind1, ind2)
+                            vec_r_Mei = get_periodic_dist_vector(boxVectors, ind2, ind1)
+                            vec_r_iMe =numpy.array(vec_r_iMe)
+                            vec_r_Mei =numpy.array(vec_r_Mei)
+                            #print(vec_r_iMe, vec_r_Mei)        
+                            #r_iMe = get_distance(i, ion_index, n_atom__xyz)
+                            r_iMe = math.sqrt(vec_r_iMe[0] **2 + vec_r_iMe[1] **2 + vec_r_iMe[2] **2)
+
+                            # add r_cutoff
+                            r_vdw_radius = type__averageR0eff[ n_atom__type[i] ] * 0.1 + type__averageR0eff[ n_atom__type[ion_index] ] * 0.1   # angstrom > nm
+                            r_cutoff = 0.92 * r_vdw_radius
+
+                            if r_iMe <= r_cutoff:
+                                    r_iMe = r_cutoff
+
+                            factor_i = n_atom__charge[ ion_index ] / ( r_iMe ** 3 )
+                            n_atom__E0[i] = factor_i * vec_r_iMe
+
+                            factor_Me = n_atom__charge[ i ] / ( r_iMe ** 3 )
+                            n_atom__E0[ion_index] += factor_Me * vec_r_Mei
+                        except KeyError as KE:
+                            print("DEBUG: KeyError when i, ion_index = ",i,ion_index)
+                            traceback.print_exc(file=sys.stdout)
+                            #print(n_atom__xyz) 
+                            sys.exit("DEBUG EXIT")
+        return(n_atom__E0)
         
 # get Tij
 def get_Tij(n_atom__xyz, i, j):
@@ -272,6 +335,31 @@ def get_Tij(n_atom__xyz, i, j):
                 
         I = numpy.eye(3)
         
+        rij_rij = numpy.dot(vec_r_ij.reshape(-1,1), vec_r_ij.reshape(1,-1))
+        Tij = ( 3  / r_ij ** 2 * rij_rij  - I ) / r_ij ** 3
+        return(Tij)
+
+def get_Tij_peri(n_atom__xyz, boxVectors, i, j):
+
+        #type__averageR0eff = get_type__R0eff()
+        #dist_vector = get_periodic_dist_vector(boxVectors, ind1, ind2)
+        #vec_r_ij = numpy.array( n_atom__xyz[ j ] ) * 0.1 - numpy.array( n_atom__xyz[ i ] ) * 0.1         # angstrom > nm
+
+        vec_r_ij = get_periodic_dist_vector(boxVectors, n_atom__xyz[j], n_atom__xyz[i])
+        vec_r_ij =numpy.array(vec_r_ij)
+
+        #r_ij = get_distance(i, j, n_atom__xyz)
+        r_ij = math.sqrt(vec_r_ij[0] **2 + vec_r_ij[1] **2 + vec_r_ij[2] **2)
+
+        # add r_cutoff
+        r_vdw_radius = type__averageR0eff[ n_atom__type[i] ] * 0.1 + type__averageR0eff[ n_atom__type[j] ] * 0.1   # angstrom > nm
+        r_cutoff = 0.92 * r_vdw_radius
+
+        if r_ij <= r_cutoff:
+                r_ij = r_cutoff
+
+        I = numpy.eye(3)
+
         rij_rij = numpy.dot(vec_r_ij.reshape(-1,1), vec_r_ij.reshape(1,-1))
         Tij = ( 3  / r_ij ** 2 * rij_rij  - I ) / r_ij ** 3
         return(Tij)
@@ -317,11 +405,77 @@ def get_induced_dipole(n_atom__xyz, n_atom__alpha0eff, n_atom__charge, n_atom_no
         n_atom_nohyd__dipole[ion_index] = dipole_Me_2
         
         return(n_atom_nohyd__dipole, n_atom_nohyd__E0)
+
+def get_induced_dipole_peri(n_atom__xyz, boxVectors, n_atom__alpha0eff, n_atom__charge, n_atom_nohyd, ion_index):
+
+        # get E0
+        n_atom_nohyd__E0 = get_E0_peri(n_atom__xyz, boxVectors, n_atom__charge, n_atom_nohyd, ion_index)
+
+        # initial guess of the induced dipole of cation
+        dipole_Me_initial = numpy.array( [0., 0., 0.] )
+
+        dipole_Me_1 = dipole_Me_initial
+
+        # induced dipole
+        n_atom_nohyd__dipole ={}
+        dipole_Me_2 = n_atom__alpha0eff[ion_index] *  n_atom_nohyd__E0[ion_index]
+        for i in n_atom_nohyd:
+                if i != ion_index:
+                        TiMe = get_Tij_peri(n_atom__xyz, boxVectors, i, ion_index)
+                        TMei = get_Tij_peri(n_atom__xyz, boxVectors, ion_index, i)
+                        #print(TiMe)
+                        #print(type(TiMe))
+                        #print(type(dipole_Me_1))
+                        n_atom_nohyd__dipole[i] = n_atom__alpha0eff[i] *  n_atom_nohyd__E0[i] + n_atom__alpha0eff[i] * numpy.dot(dipole_Me_1 , TiMe)
+                        dipole_Me_2 += n_atom__alpha0eff[ion_index] * numpy.dot(n_atom_nohyd__dipole[i] , TMei)
+
+        N = 0
+        while numpy.linalg.norm( dipole_Me_2 - dipole_Me_1 ) > 2.0819434e-8:           # 1D = 0.020819434 e*nm   10**(-6) D > e*nm 
+
+                dipole_Me_1 = dipole_Me_2
+
+                n_atom_nohyd__dipole ={}
+                dipole_Me_2 = n_atom__alpha0eff[ion_index] *  n_atom_nohyd__E0[ion_index]
+                for i in n_atom_nohyd:
+                        if i != ion_index:
+                                TiMe = get_Tij_peri(n_atom__xyz, boxVectors, i, ion_index)
+                                TMei = get_Tij_peri(n_atom__xyz, boxVectors, ion_index, i)
+
+                                n_atom_nohyd__dipole[i] = n_atom__alpha0eff[i] *  n_atom_nohyd__E0[i] + n_atom__alpha0eff[i] * numpy.dot(dipole_Me_1 , TiMe)
+                                dipole_Me_2 += n_atom__alpha0eff[ion_index] * numpy.dot(n_atom_nohyd__dipole[i] , TMei)
+                N += 1
+
+        n_atom_nohyd__dipole[ion_index] = dipole_Me_2
+
+        return(n_atom_nohyd__dipole, n_atom_nohyd__E0)
         
 def write_CT(sp, total_transq):
     with open('charge_tranfer', 'w') as out:
         out.write('step: ', sp, 'charge transfer: ',total_transq)
         
+def get_periodic_dist_vector(boxVectors, pos1, pos2):
+    invBoxSize = []
+    #print(boxVectors[0])
+    #print(boxVectors[0][0])
+    for i in range(3):
+        #print(i)
+        invBoxSize.append(1.0/boxVectors[i][i])
+    #print(pos1, pos2)  
+    dx = pos1[0]-pos2[0]
+    dy = pos1[1]-pos2[1]
+    dz = pos1[2]-pos2[2]
+    scale3 = round(dz*invBoxSize[2])
+    dx -= scale3*boxVectors[2][0]
+    dy -= scale3*boxVectors[2][1]
+    dz -= scale3*boxVectors[2][2]
+    scale2 = round(dy*invBoxSize[1])
+    dx -= scale2*boxVectors[1][0]
+    dy -= scale2*boxVectors[1][1]
+    scale1 = round(dx*invBoxSize[0])
+    dx -= scale1*boxVectors[0][0]
+    dist_vector = [dx, dy, dz]
+
+    return(dist_vector)
         
 ##########################################################################################################################
 global f14
@@ -554,7 +708,7 @@ with open('time_out.dat', 'w') as timeout:
                         else:
                                 cation_pairs.append((ion_index, i))
                             
-                CN = get_CN(index__position, cation_pairs, type__zero_transfer_distance)
+                CN = get_CN_peri(index__position_nm, vectors, cation_pairs, type__zero_transfer_distance)
                 
                 # update new charges
                 # load nonbondedforce
@@ -573,8 +727,10 @@ with open('time_out.dat', 'w') as timeout:
         
                         #if atom_index < 424:
                         if n_atom__type[index] in type__ChargeTransfer_parameters.keys():
-                                r = get_distance(index, ion_index, index__position)
-                                print('index:  ', float(index), '  position:  ', float(index__position[index][0]), float(index__position[index][1]), float(index__position[index][2]))
+                                dist_vector = get_periodic_dist_vector(vectors, index__position_nm[index], index__position_nm[ion_index])
+                                r = math.sqrt(dist_vector[0] **2 + dist_vector[1] **2 +dist_vector[2] **2)
+                                print('index:  ', float(index), 'r', float(r), '  position:  ', float(index__position[index][0]), float(index__position[index][1]), float(index__position[index][2]))
+
                                 # only consider r <= zero_transfer_distance 
                                 if r < type__zero_transfer_distance[n_atom__type[index]] :
                                         
@@ -616,7 +772,7 @@ with open('time_out.dat', 'w') as timeout:
                 
                 ## polarization
                 #get induced dipole
-                n_atom_nohyd__dipole, n_atom_nohyd__E0 = get_induced_dipole(index__position, n_atom_nohyd__alpha0eff, index__charge, n_atom_nohyd, ion_index)
+                n_atom_nohyd__dipole, n_atom_nohyd__E0 = get_induced_dipole_peri(index__position_nm, vectors, n_atom_nohyd__alpha0eff, index__charge, n_atom_nohyd, ion_index)
                 
                 cmforce = forces['CustomExternalForce']
                 
